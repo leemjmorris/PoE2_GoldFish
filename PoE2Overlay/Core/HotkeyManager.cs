@@ -60,7 +60,7 @@ namespace PoE2Overlay.Core
             _hookId = SetWindowsHookEx(WH_KEYBOARD_LL, _proc, GetModuleHandle(module.ModuleName), 0);
         }
 
-        public void Register(uint modifiers, uint vkCode, Action callback)
+        public void Register(uint modifiers, uint vkCode, Action callback, bool suppress = false)
         {
             _bindings.Add(new HotkeyBinding
             {
@@ -68,7 +68,8 @@ namespace PoE2Overlay.Core
                 Ctrl = (modifiers & ModKeys.Ctrl) != 0,
                 Alt = (modifiers & ModKeys.Alt) != 0,
                 Shift = (modifiers & ModKeys.Shift) != 0,
-                Callback = callback
+                Callback = callback,
+                Suppress = suppress
             });
         }
 
@@ -79,21 +80,30 @@ namespace PoE2Overlay.Core
             if (nCode >= HC_ACTION &&
                 (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
             {
-                var kb = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
-                bool ctrl = IsKeyDown(VK_CONTROL);
-                bool alt = IsKeyDown(VK_MENU);
-                bool shift = IsKeyDown(VK_SHIFT);
-
-                foreach (var binding in _bindings)
+                try
                 {
-                    if (kb.vkCode == binding.VkCode &&
-                        ctrl == binding.Ctrl &&
-                        alt == binding.Alt &&
-                        shift == binding.Shift)
+                    var kb = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+                    bool ctrl = IsKeyDown(VK_CONTROL);
+                    bool alt = IsKeyDown(VK_MENU);
+                    bool shift = IsKeyDown(VK_SHIFT);
+
+                    foreach (var binding in _bindings)
                     {
-                        binding.Callback.Invoke();
-                        break;
+                        if (kb.vkCode == binding.VkCode &&
+                            ctrl == binding.Ctrl &&
+                            alt == binding.Alt &&
+                            shift == binding.Shift)
+                        {
+                            binding.Callback.Invoke();
+                            if (binding.Suppress)
+                                return (IntPtr)1;
+                            break;
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[HotkeyManager] Callback error: {ex.Message}");
                 }
             }
 
@@ -116,6 +126,7 @@ namespace PoE2Overlay.Core
             public bool Alt;
             public bool Shift;
             public Action Callback;
+            public bool Suppress;
         }
     }
 

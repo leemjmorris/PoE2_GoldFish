@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using PoE2Overlay.Features.Trade.Models;
@@ -211,7 +212,7 @@ namespace PoE2Overlay.Features.Trade.Services
                 // 숫자값 추출
                 var valueMatch = Regex.Match(trimmed, @"(\d+(?:\.\d+)?)");
                 if (valueMatch.Success)
-                    mod.Value = double.Parse(valueMatch.Groups[1].Value);
+                    mod.Value = double.Parse(valueMatch.Groups[1].Value, CultureInfo.InvariantCulture);
 
                 if (trimmed.Contains("(implicit)"))
                 {

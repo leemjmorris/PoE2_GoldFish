@@ -171,6 +171,17 @@ namespace PoE2Overlay.Features.Trade
 
             StatusText.Text = "Searching...";
 
+            if (!_statResolver.IsLoaded)
+            {
+                StatusText.Text = "Loading stat data...";
+                await _statResolver.EnsureLoadedAsync();
+                if (!_statResolver.IsLoaded)
+                {
+                    StatusText.Text = "Failed to load stat data. Check your internet connection.";
+                    return;
+                }
+            }
+
             AppSettings.Instance.TradeLeague = LeagueInput.Text;
             AppSettings.Instance.Save();
 
@@ -227,15 +238,19 @@ namespace PoE2Overlay.Features.Trade
                     Disabled = false
                 };
 
-                double.TryParse(control.MinBox.Text, out double minVal);
-                double.TryParse(control.MaxBox.Text, out double maxVal);
+                bool hasMin = double.TryParse(control.MinBox.Text, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out double minVal)
+                    && !string.IsNullOrWhiteSpace(control.MinBox.Text);
+                bool hasMax = double.TryParse(control.MaxBox.Text, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out double maxVal)
+                    && !string.IsNullOrWhiteSpace(control.MaxBox.Text);
 
-                if (minVal > 0 || maxVal > 0)
+                if (hasMin || hasMax)
                 {
                     filter.Value = new StatFilterValue
                     {
-                        Min = minVal > 0 ? minVal : (double?)null,
-                        Max = maxVal > 0 ? maxVal : (double?)null
+                        Min = hasMin ? minVal : (double?)null,
+                        Max = hasMax ? maxVal : (double?)null
                     };
                 }
 
@@ -255,21 +270,24 @@ namespace PoE2Overlay.Features.Trade
             StatusText.Text = $"Found {result.TotalCount} results";
             ResultSummaryText.Text = $"Showing {result.Items.Count} of {result.TotalCount}";
 
-            var prices = result.Items
+            var pricesByCurrency = result.Items
                 .Where(i => i.Listing?.Price != null)
-                .Select(i => i.Listing.Price.Amount)
-                .OrderBy(p => p)
+                .GroupBy(i => i.Listing.Price.Currency)
+                .OrderByDescending(g => g.Count())
                 .ToList();
 
-            if (prices.Count > 0)
+            if (pricesByCurrency.Count > 0)
             {
-                double median = prices.Count % 2 == 0
-                    ? (prices[prices.Count / 2 - 1] + prices[prices.Count / 2]) / 2
-                    : prices[prices.Count / 2];
-                var currency = result.Items
-                    .First(i => i.Listing?.Price != null)
-                    .Listing.Price.Currency;
-                MedianPriceText.Text = $"Median: {median:F1} {currency}";
+                var medianParts = new List<string>();
+                foreach (var group in pricesByCurrency)
+                {
+                    var sorted = group.Select(i => i.Listing.Price.Amount).OrderBy(p => p).ToList();
+                    double median = sorted.Count % 2 == 0
+                        ? (sorted[sorted.Count / 2 - 1] + sorted[sorted.Count / 2]) / 2
+                        : sorted[sorted.Count / 2];
+                    medianParts.Add($"{median:F1} {group.Key} ({sorted.Count})");
+                }
+                MedianPriceText.Text = $"Median: {string.Join(" | ", medianParts)}";
             }
             else
             {
