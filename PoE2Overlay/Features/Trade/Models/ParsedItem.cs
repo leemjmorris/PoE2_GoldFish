@@ -51,6 +51,7 @@ namespace PoE2Overlay.Features.Trade.Models
         public int? RequiredInt { get; set; }
         public List<ItemMod> ImplicitMods { get; set; } = new();
         public List<ItemMod> ExplicitMods { get; set; } = new();
+        public bool IsCorrupted { get; set; }
         public string RawText { get; set; }
         public bool IsValid { get; set; }
     }

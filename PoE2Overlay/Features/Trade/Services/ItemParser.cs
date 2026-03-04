@@ -66,6 +66,9 @@ namespace PoE2Overlay.Features.Trade.Services
                 }
             }
 
+            item.IsCorrupted = sections.Any(s =>
+                string.Equals(s.Trim(), "Corrupted", StringComparison.OrdinalIgnoreCase));
+
             item.IsValid = true;
             return item;
         }

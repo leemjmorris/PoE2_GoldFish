@@ -49,6 +49,9 @@ namespace PoE2Overlay.Features.Trade.Models
     {
         [JsonProperty("name")]
         public string Name { get; set; }
+
+        [JsonProperty("lastCharacterName")]
+        public string LastCharacterName { get; set; }
     }
 
     public class PriceInfo

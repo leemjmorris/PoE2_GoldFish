@@ -42,6 +42,9 @@
                            Foreground="#AAEAEAEA" FontSize="12"/>
                 <TextBlock x:Name="ItemLevelText"
                            Foreground="#66EAEAEA" FontSize="11" Margin="0,2,0,0"/>
+                <TextBlock x:Name="CorruptedText" Text="Corrupted"
+                           Foreground="#FFCC2222" FontSize="11" Margin="0,2,0,0"
+                           Visibility="Collapsed"/>
                 <Separator Background="{StaticResource BorderBrush}" Margin="0,6"/>
 
                 <!-- 리그 + 검색 -->
@@ -58,7 +61,7 @@
                     <TextBox x:Name="LeagueInput" Grid.Column="1"
                              Style="{StaticResource OverlayTextInput}"
                              Text="Standard"/>
-                    <Button Grid.Column="2" Content="Search"
+                    <Button x:Name="SearchButton" Grid.Column="2" Content="Search"
                             Style="{StaticResource TitleBarButton}"
                             Width="60" Margin="8,0,0,0"
                             Click="OnSearchClick"/>
@@ -82,14 +85,29 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0" Margin="8,4">
-                            <TextBlock x:Name="ResultSummaryText"
-                                       Foreground="#AAEAEAEA" FontSize="11"/>
-                            <TextBlock x:Name="MedianPriceText"
-                                       Foreground="{StaticResource AccentBrush}"
-                                       FontSize="14" FontWeight="Bold"
-                                       Margin="0,4,0,0"/>
-                        </StackPanel>
+                        <Grid Grid.Row="0" Margin="8,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock x:Name="ResultSummaryText"
+                                           Foreground="#AAEAEAEA" FontSize="11"/>
+                                <TextBlock x:Name="MedianPriceText"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           FontSize="14" FontWeight="Bold"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <Button x:Name="OpenBrowserButton" Grid.Column="1"
+                                    Content="↗" ToolTip="Open full results in browser"
+                                    Click="OnOpenBrowserClick"
+                                    Background="Transparent" BorderThickness="0"
+                                    Foreground="{StaticResource AccentBrush}"
+                                    FontSize="14" Padding="4,0"
+                                    VerticalAlignment="Top"
+                                    Cursor="Hand"
+                                    Visibility="Collapsed"/>
+                        </Grid>
 
                         <ListView Grid.Row="1" x:Name="ResultsList"
                                   Background="Transparent"
@@ -101,14 +119,34 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="26"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding AccountName}"
-                                                   Foreground="#88EAEAEA"
-                                                   FontSize="11"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding AccountName}"
+                                                       Foreground="#88EAEAEA"
+                                                       FontSize="11"/>
+                                            <TextBlock Text="{Binding IndexedText}"
+                                                       Foreground="#55EAEAEA"
+                                                       FontSize="9"/>
+                                        </StackPanel>
                                         <TextBlock Grid.Column="1"
                                                    Text="{Binding PriceText}"
                                                    Foreground="{StaticResource AccentBrush}"
-                                                   FontSize="12" FontWeight="SemiBold"/>
+                                                   FontSize="12" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"
+                                                   Margin="4,0"/>
+                                        <Button Grid.Column="2"
+                                                Content="✉"
+                                                Tag="{Binding WhisperText}"
+                                                Click="OnWhisperClick"
+                                                ToolTip="Copy whisper to clipboard"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Foreground="#66EAEAEA"
+                                                FontSize="12"
+                                                Padding="0"
+                                                Cursor="Hand"
+                                                VerticalAlignment="Center"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -120,7 +158,7 @@
             <!-- 상태바 -->
             <Border Grid.Row="3" Background="{StaticResource SecondaryBrush}"
                     CornerRadius="0,0,8,8">
-                <TextBlock x:Name="StatusText" Text="Ctrl+C on item in PoE2"
+                <TextBlock x:Name="StatusText" Text="Ctrl+D on item in PoE2"
                            Foreground="#88EAEAEA" FontSize="11"
                            VerticalAlignment="Center" Margin="10,0,0,0"/>
             </Border>

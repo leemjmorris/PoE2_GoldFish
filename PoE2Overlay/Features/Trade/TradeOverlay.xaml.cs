@@ -19,6 +19,8 @@ namespace PoE2Overlay.Features.Trade
         private readonly StatIdResolver _statResolver;
         private ParsedItem _currentItem;
         private readonly List<ModFilterControl> _modFilterControls = new();
+        private string _lastQueryId;
+        private string _lastLeague;
 
         public TradeOverlay(TradeApiClient apiClient, StatIdResolver statResolver)
         {
@@ -52,12 +54,15 @@ namespace PoE2Overlay.Features.Trade
             ItemBaseText.Text = item.BaseType ?? "";
             ItemLevelText.Text = item.ItemLevel.HasValue
                 ? $"Item Level: {item.ItemLevel}" : "";
+            CorruptedText.Visibility = item.IsCorrupted
+                ? Visibility.Visible : Visibility.Collapsed;
 
             BuildModFilters(item);
 
             ResultsList.ItemsSource = null;
             ResultSummaryText.Text = "";
             MedianPriceText.Text = "";
+            OpenBrowserButton.Visibility = Visibility.Collapsed;
             StatusText.Text = "Item loaded. Adjust filters and click Search.";
         }
 
@@ -172,27 +177,28 @@ namespace PoE2Overlay.Features.Trade
         {
             if (_currentItem == null) return;
 
+            SearchButton.IsEnabled = false;
             StatusText.Text = "Searching...";
-
-            if (!_statResolver.IsLoaded)
-            {
-                StatusText.Text = "Loading stat data...";
-                await _statResolver.EnsureLoadedAsync();
-                if (!_statResolver.IsLoaded)
-                {
-                    StatusText.Text = "Failed to load stat data. Check your internet connection.";
-                    return;
-                }
-            }
-
-            AppSettings.Instance.TradeLeague = LeagueInput.Text;
-            AppSettings.Instance.Save();
-
-            var request = BuildSearchRequest();
-            var league = LeagueInput.Text;
 
             try
             {
+                if (!_statResolver.IsLoaded)
+                {
+                    StatusText.Text = "Loading stat data...";
+                    await _statResolver.EnsureLoadedAsync();
+                    if (!_statResolver.IsLoaded)
+                    {
+                        StatusText.Text = "Failed to load stat data. Check your internet connection.";
+                        return;
+                    }
+                }
+
+                AppSettings.Instance.TradeLeague = LeagueInput.Text;
+                AppSettings.Instance.Save();
+
+                var request = BuildSearchRequest();
+                var league = LeagueInput.Text;
+
                 var result = await _apiClient.SearchAndFetchAsync(request, league);
 
                 if (!string.IsNullOrEmpty(result.Error))
@@ -201,11 +207,17 @@ namespace PoE2Overlay.Features.Trade
                     return;
                 }
 
+                _lastQueryId = result.QueryId;
+                _lastLeague = league;
                 DisplayResults(result);
             }
             catch (Exception ex)
             {
                 StatusText.Text = $"Error: {ex.Message}";
+            }
+            finally
+            {
+                SearchButton.IsEnabled = true;
             }
         }
 
@@ -302,11 +314,15 @@ namespace PoE2Overlay.Features.Trade
                 .Select(i => new
                 {
                     AccountName = i.Listing.Account?.Name ?? "Unknown",
-                    PriceText = $"{i.Listing.Price.Amount:F1} {i.Listing.Price.Currency}"
+                    PriceText = $"{i.Listing.Price.Amount:F1} {i.Listing.Price.Currency}",
+                    IndexedText = FormatIndexedTime(i.Listing.Indexed),
+                    WhisperText = BuildWhisperText(i)
                 })
                 .ToList();
 
             ResultsList.ItemsSource = displayItems;
+            OpenBrowserButton.Visibility = result.QueryId != null
+                ? Visibility.Visible : Visibility.Collapsed;
         }
 
         // === 공통 오버레이 메서드 ===
@@ -382,6 +398,53 @@ namespace PoE2Overlay.Features.Trade
             double newH = Height + e.VerticalChange;
             if (newW >= MinWidth) Width = newW;
             if (newH >= MinHeight) Height = newH;
+        }
+
+        private void OnWhisperClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button btn &&
+                btn.Tag is string whisper &&
+                !string.IsNullOrEmpty(whisper))
+            {
+                try { Clipboard.SetText(whisper); } catch { }
+                StatusText.Text = "Whisper copied!";
+            }
+        }
+
+        private void OnOpenBrowserClick(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_lastQueryId)) return;
+            var league = Uri.EscapeDataString(_lastLeague ?? "Standard");
+            var url = $"https://www.pathofexile.com/trade2/search/poe2/{league}/{_lastQueryId}";
+            try
+            {
+                System.Diagnostics.Process.Start(
+                    new System.Diagnostics.ProcessStartInfo { FileName = url, UseShellExecute = true });
+            }
+            catch { }
+        }
+
+        private static string FormatIndexedTime(string indexed)
+        {
+            if (string.IsNullOrEmpty(indexed)) return "";
+            if (!DateTime.TryParse(indexed, null,
+                System.Globalization.DateTimeStyles.RoundtripKind, out var dt)) return "";
+            var elapsed = DateTime.UtcNow - dt.ToUniversalTime();
+            if (elapsed.TotalMinutes < 1) return "just now";
+            if (elapsed.TotalHours < 1) return $"{(int)elapsed.TotalMinutes}m ago";
+            if (elapsed.TotalDays < 1) return $"{(int)elapsed.TotalHours}h ago";
+            return $"{(int)elapsed.TotalDays}d ago";
+        }
+
+        private string BuildWhisperText(FetchedItem item)
+        {
+            var charName = item.Listing?.Account?.LastCharacterName
+                        ?? item.Listing?.Account?.Name
+                        ?? "?";
+            var itemName = item.Item?.TypeLine ?? item.Item?.Name ?? "item";
+            var price = item.Listing?.Price;
+            var priceStr = price != null ? $"{price.Amount:F1} {price.Currency}" : "?";
+            return $"@{charName} Hi, I would like to buy your {itemName} listed for {priceStr} in {LeagueInput.Text}";
         }
 
         protected override void OnDeactivated(EventArgs e)
