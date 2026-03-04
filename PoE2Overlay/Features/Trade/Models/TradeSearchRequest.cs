@@ -73,6 +73,12 @@ namespace PoE2Overlay.Features.Trade.Models
     {
         [JsonProperty("misc_filters")]
         public MiscFilters MiscFilters { get; set; }
+
+        [JsonProperty("weapon_filters")]
+        public WeaponFilters WeaponFilters { get; set; }
+
+        [JsonProperty("armour_filters")]
+        public ArmourFilters ArmourFilters { get; set; }
     }
 
     public class MiscFilters
@@ -85,14 +91,74 @@ namespace PoE2Overlay.Features.Trade.Models
     {
         [JsonProperty("ilvl")]
         public RangeFilter ItemLevel { get; set; }
+
+        [JsonProperty("quality")]
+        public RangeFilter Quality { get; set; }
+
+        [JsonProperty("corrupted")]
+        public BoolFilter Corrupted { get; set; }
+
+        [JsonProperty("mirrored")]
+        public BoolFilter Mirrored { get; set; }
+    }
+
+    public class WeaponFilters
+    {
+        [JsonProperty("filters")]
+        public WeaponFilterValues Filters { get; set; } = new();
+    }
+
+    public class WeaponFilterValues
+    {
+        [JsonProperty("pdps")]
+        public RangeFilter PhysicalDps { get; set; }
+
+        [JsonProperty("edps")]
+        public RangeFilter ElementalDps { get; set; }
+
+        [JsonProperty("dps")]
+        public RangeFilter TotalDps { get; set; }
+
+        [JsonProperty("aps")]
+        public RangeFilter AttacksPerSecond { get; set; }
+
+        [JsonProperty("crit")]
+        public RangeFilter CriticalHitChance { get; set; }
+    }
+
+    public class ArmourFilters
+    {
+        [JsonProperty("filters")]
+        public ArmourFilterValues Filters { get; set; } = new();
+    }
+
+    public class ArmourFilterValues
+    {
+        [JsonProperty("ar")]
+        public RangeFilter Armour { get; set; }
+
+        [JsonProperty("ev")]
+        public RangeFilter EvasionRating { get; set; }
+
+        [JsonProperty("es")]
+        public RangeFilter EnergyShield { get; set; }
+
+        [JsonProperty("spirit")]
+        public RangeFilter Spirit { get; set; }
     }
 
     public class RangeFilter
     {
         [JsonProperty("min")]
-        public int? Min { get; set; }
+        public double? Min { get; set; }
 
         [JsonProperty("max")]
-        public int? Max { get; set; }
+        public double? Max { get; set; }
+    }
+
+    public class BoolFilter
+    {
+        [JsonProperty("option")]
+        public string Option { get; set; }
     }
 }

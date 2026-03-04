@@ -54,6 +54,7 @@ namespace PoE2Overlay.Features.Trade.Services
                     passedItemLevel = true;
                     continue;
                 }
+                if (TryParseItemProperties(lines, item)) continue;
 
                 // 플레이버 텍스트 스킵 (보통 마지막 섹션, 이탤릭 설명)
                 if (IsFlavorText(lines, item)) continue;
@@ -68,6 +69,10 @@ namespace PoE2Overlay.Features.Trade.Services
 
             item.IsCorrupted = sections.Any(s =>
                 string.Equals(s.Trim(), "Corrupted", StringComparison.OrdinalIgnoreCase));
+            item.IsMirrored = sections.Any(s =>
+                string.Equals(s.Trim(), "Mirrored", StringComparison.OrdinalIgnoreCase));
+            item.IsUnidentified = sections.Any(s =>
+                string.Equals(s.Trim(), "Unidentified", StringComparison.OrdinalIgnoreCase));
 
             item.IsValid = true;
             return item;
@@ -142,6 +147,80 @@ namespace PoE2Overlay.Features.Trade.Services
                     item.BaseType = pendingName;
                 }
             }
+        }
+
+        private static bool TryParseItemProperties(string[] lines, ParsedItem item)
+        {
+            bool matched = false;
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("Quality:"))
+                {
+                    var m = Regex.Match(line, @"\+?(\d+)%");
+                    if (m.Success) item.Quality = int.Parse(m.Groups[1].Value);
+                    matched = true;
+                }
+                else if (line.StartsWith("Physical Damage:"))
+                {
+                    var m = Regex.Match(line, @"(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)");
+                    if (m.Success)
+                    {
+                        item.PhysicalDamageMin = double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+                        item.PhysicalDamageMax = double.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+                    }
+                    matched = true;
+                }
+                else if (line.StartsWith("Elemental Damage:") || line.StartsWith("Fire Damage:") ||
+                         line.StartsWith("Cold Damage:") || line.StartsWith("Lightning Damage:"))
+                {
+                    var m = Regex.Match(line, @"(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)");
+                    if (m.Success)
+                    {
+                        double eMin = double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+                        double eMax = double.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+                        item.ElementalDamageMin = (item.ElementalDamageMin ?? 0) + eMin;
+                        item.ElementalDamageMax = (item.ElementalDamageMax ?? 0) + eMax;
+                    }
+                    matched = true;
+                }
+                else if (line.StartsWith("Attacks per Second:"))
+                {
+                    var m = Regex.Match(line, @"(\d+(?:\.\d+)?)");
+                    if (m.Success) item.AttacksPerSecond = double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+                    matched = true;
+                }
+                else if (line.StartsWith("Critical Hit Chance:"))
+                {
+                    var m = Regex.Match(line, @"(\d+(?:\.\d+)?)%");
+                    if (m.Success) item.CriticalHitChance = double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+                    matched = true;
+                }
+                else if (line.StartsWith("Armour:"))
+                {
+                    var m = Regex.Match(line, @"(\d+)");
+                    if (m.Success) item.Armour = int.Parse(m.Groups[1].Value);
+                    matched = true;
+                }
+                else if (line.StartsWith("Evasion Rating:"))
+                {
+                    var m = Regex.Match(line, @"(\d+)");
+                    if (m.Success) item.EvasionRating = int.Parse(m.Groups[1].Value);
+                    matched = true;
+                }
+                else if (line.StartsWith("Energy Shield:"))
+                {
+                    var m = Regex.Match(line, @"(\d+)");
+                    if (m.Success) item.EnergyShield = int.Parse(m.Groups[1].Value);
+                    matched = true;
+                }
+                else if (line.StartsWith("Spirit:"))
+                {
+                    var m = Regex.Match(line, @"(\d+)");
+                    if (m.Success) item.Spirit = int.Parse(m.Groups[1].Value);
+                    matched = true;
+                }
+            }
+            return matched;
         }
 
         private static bool TryParseRequirements(string[] lines, ParsedItem item)

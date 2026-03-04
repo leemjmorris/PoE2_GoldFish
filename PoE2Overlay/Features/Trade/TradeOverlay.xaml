@@ -42,8 +42,17 @@
                            Foreground="#AAEAEAEA" FontSize="12"/>
                 <TextBlock x:Name="ItemLevelText"
                            Foreground="#66EAEAEA" FontSize="11" Margin="0,2,0,0"/>
+                <TextBlock x:Name="ItemPropsText"
+                           Foreground="#AAEAEAEA" FontSize="11" Margin="0,2,0,0"
+                           Visibility="Collapsed"/>
                 <TextBlock x:Name="CorruptedText" Text="Corrupted"
                            Foreground="#FFCC2222" FontSize="11" Margin="0,2,0,0"
+                           Visibility="Collapsed"/>
+                <TextBlock x:Name="MirroredText" Text="Mirrored"
+                           Foreground="#FF6699CC" FontSize="11" Margin="0,2,0,0"
+                           Visibility="Collapsed"/>
+                <TextBlock x:Name="UnidentifiedText" Text="Unidentified"
+                           Foreground="#FFCC8833" FontSize="11" Margin="0,2,0,0"
                            Visibility="Collapsed"/>
                 <Separator Background="{StaticResource BorderBrush}" Margin="0,6"/>
 

@@ -52,6 +52,42 @@ namespace PoE2Overlay.Features.Trade.Models
         public List<ItemMod> ImplicitMods { get; set; } = new();
         public List<ItemMod> ExplicitMods { get; set; } = new();
         public bool IsCorrupted { get; set; }
+        public bool IsMirrored { get; set; }
+        public bool IsUnidentified { get; set; }
+        public int? Quality { get; set; }
+
+        // Weapon stats
+        public double? PhysicalDamageMin { get; set; }
+        public double? PhysicalDamageMax { get; set; }
+        public double? ElementalDamageMin { get; set; }
+        public double? ElementalDamageMax { get; set; }
+        public double? AttacksPerSecond { get; set; }
+        public double? CriticalHitChance { get; set; }
+
+        // Computed DPS
+        public double? PhysicalDps =>
+            PhysicalDamageMin.HasValue && PhysicalDamageMax.HasValue && AttacksPerSecond.HasValue
+                ? (PhysicalDamageMin.Value + PhysicalDamageMax.Value) / 2.0 * AttacksPerSecond.Value
+                : (double?)null;
+        public double? ElementalDps =>
+            ElementalDamageMin.HasValue && ElementalDamageMax.HasValue && AttacksPerSecond.HasValue
+                ? (ElementalDamageMin.Value + ElementalDamageMax.Value) / 2.0 * AttacksPerSecond.Value
+                : (double?)null;
+        public double? TotalDps
+        {
+            get
+            {
+                var t = (PhysicalDps ?? 0) + (ElementalDps ?? 0);
+                return t > 0 ? t : (double?)null;
+            }
+        }
+
+        // Armour stats
+        public int? Armour { get; set; }
+        public int? EvasionRating { get; set; }
+        public int? EnergyShield { get; set; }
+        public int? Spirit { get; set; }
+
         public string RawText { get; set; }
         public bool IsValid { get; set; }
     }

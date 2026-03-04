@@ -54,8 +54,25 @@ namespace PoE2Overlay.Features.Trade
             ItemBaseText.Text = item.BaseType ?? "";
             ItemLevelText.Text = item.ItemLevel.HasValue
                 ? $"Item Level: {item.ItemLevel}" : "";
-            CorruptedText.Visibility = item.IsCorrupted
-                ? Visibility.Visible : Visibility.Collapsed;
+
+            // 무기/방어구 속성 표시
+            var props = new List<string>();
+            if (item.Quality.HasValue) props.Add($"Q: {item.Quality}%");
+            if (item.TotalDps.HasValue)
+                props.Add($"DPS: {item.TotalDps:F1} (P:{item.PhysicalDps:F1} E:{item.ElementalDps:F1})");
+            else if (item.PhysicalDps.HasValue)
+                props.Add($"pDPS: {item.PhysicalDps:F1}");
+            if (item.AttacksPerSecond.HasValue) props.Add($"APS: {item.AttacksPerSecond:F2}");
+            if (item.Armour.HasValue) props.Add($"AR: {item.Armour}");
+            if (item.EvasionRating.HasValue) props.Add($"EV: {item.EvasionRating}");
+            if (item.EnergyShield.HasValue) props.Add($"ES: {item.EnergyShield}");
+            if (item.Spirit.HasValue) props.Add($"Spirit: {item.Spirit}");
+            ItemPropsText.Text = string.Join("  ", props);
+            ItemPropsText.Visibility = props.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            CorruptedText.Visibility = item.IsCorrupted ? Visibility.Visible : Visibility.Collapsed;
+            MirroredText.Visibility = item.IsMirrored ? Visibility.Visible : Visibility.Collapsed;
+            UnidentifiedText.Visibility = item.IsUnidentified ? Visibility.Visible : Visibility.Collapsed;
 
             BuildModFilters(item);
 
@@ -280,6 +297,39 @@ namespace PoE2Overlay.Features.Trade
                 request.Query.Stats.Add(statFilters);
             else
                 request.Query.Stats.Add(new StatFilterGroup { Type = "and" });
+
+            // 무기/방어구 자동 필터 (현재 값의 80% 하한)
+            var item = _currentItem;
+            if (item.PhysicalDps.HasValue || item.ElementalDps.HasValue || item.TotalDps.HasValue ||
+                item.AttacksPerSecond.HasValue || item.CriticalHitChance.HasValue)
+            {
+                request.Query.Filters ??= new QueryFilters();
+                request.Query.Filters.WeaponFilters = new WeaponFilters { Filters = new WeaponFilterValues() };
+                var wf = request.Query.Filters.WeaponFilters.Filters;
+                if (item.PhysicalDps.HasValue)
+                    wf.PhysicalDps = new RangeFilter { Min = Math.Floor(item.PhysicalDps.Value * 0.8) };
+                if (item.ElementalDps.HasValue)
+                    wf.ElementalDps = new RangeFilter { Min = Math.Floor(item.ElementalDps.Value * 0.8) };
+                if (item.TotalDps.HasValue)
+                    wf.TotalDps = new RangeFilter { Min = Math.Floor(item.TotalDps.Value * 0.8) };
+                if (item.AttacksPerSecond.HasValue)
+                    wf.AttacksPerSecond = new RangeFilter { Min = Math.Round(item.AttacksPerSecond.Value * 0.95, 2) };
+            }
+
+            if (item.Armour.HasValue || item.EvasionRating.HasValue || item.EnergyShield.HasValue || item.Spirit.HasValue)
+            {
+                request.Query.Filters ??= new QueryFilters();
+                request.Query.Filters.ArmourFilters = new ArmourFilters { Filters = new ArmourFilterValues() };
+                var af = request.Query.Filters.ArmourFilters.Filters;
+                if (item.Armour.HasValue)
+                    af.Armour = new RangeFilter { Min = Math.Floor(item.Armour.Value * 0.8) };
+                if (item.EvasionRating.HasValue)
+                    af.EvasionRating = new RangeFilter { Min = Math.Floor(item.EvasionRating.Value * 0.8) };
+                if (item.EnergyShield.HasValue)
+                    af.EnergyShield = new RangeFilter { Min = Math.Floor(item.EnergyShield.Value * 0.8) };
+                if (item.Spirit.HasValue)
+                    af.Spirit = new RangeFilter { Min = Math.Floor(item.Spirit.Value * 0.8) };
+            }
 
             return (request, statFilters.Filters.Count, totalEnabled);
         }
