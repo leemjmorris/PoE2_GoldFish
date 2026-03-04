@@ -196,7 +196,7 @@ namespace PoE2Overlay.Features.Trade
                 AppSettings.Instance.TradeLeague = LeagueInput.Text;
                 AppSettings.Instance.Save();
 
-                var request = BuildSearchRequest();
+                var (request, matchedMods, totalMods) = BuildSearchRequest();
                 var league = LeagueInput.Text;
 
                 var result = await _apiClient.SearchAndFetchAsync(request, league);
@@ -209,7 +209,7 @@ namespace PoE2Overlay.Features.Trade
 
                 _lastQueryId = result.QueryId;
                 _lastLeague = league;
-                DisplayResults(result);
+                DisplayResults(result, matchedMods, totalMods);
             }
             catch (Exception ex)
             {
@@ -221,7 +221,7 @@ namespace PoE2Overlay.Features.Trade
             }
         }
 
-        private TradeSearchRequest BuildSearchRequest()
+        private (TradeSearchRequest request, int matched, int total) BuildSearchRequest()
         {
             var request = new TradeSearchRequest();
 
@@ -236,11 +236,15 @@ namespace PoE2Overlay.Features.Trade
                 request.Query.Type = _currentItem.BaseType;
             }
 
+            request.Query.Status.Option = OnlineOnlyCheck.IsChecked == true ? "online" : "any";
+
             var statFilters = new StatFilterGroup { Type = "and" };
+            int totalEnabled = 0;
 
             foreach (var control in _modFilterControls)
             {
                 if (control.CheckBox.IsChecked != true) continue;
+                totalEnabled++;
 
                 var statId = _statResolver.Resolve(
                     control.Mod.RawText, control.Mod.Type);
@@ -277,12 +281,15 @@ namespace PoE2Overlay.Features.Trade
             else
                 request.Query.Stats.Add(new StatFilterGroup { Type = "and" });
 
-            return request;
+            return (request, statFilters.Filters.Count, totalEnabled);
         }
 
-        private void DisplayResults(TradeResult result)
+        private void DisplayResults(TradeResult result, int matchedMods = 0, int totalMods = 0)
         {
-            StatusText.Text = $"Found {result.TotalCount} results";
+            var modInfo = totalMods > 0 && matchedMods < totalMods
+                ? $" ({matchedMods}/{totalMods} mods matched)"
+                : "";
+            StatusText.Text = $"Found {result.TotalCount} results{modInfo}";
             ResultSummaryText.Text = $"Showing {result.Items.Count} of {result.TotalCount}";
 
             var pricesByCurrency = result.Items

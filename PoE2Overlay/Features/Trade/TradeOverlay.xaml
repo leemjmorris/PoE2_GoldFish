@@ -66,6 +66,12 @@
                             Width="60" Margin="8,0,0,0"
                             Click="OnSearchClick"/>
                 </Grid>
+                <CheckBox x:Name="OnlineOnlyCheck"
+                          Content="Online only"
+                          IsChecked="True"
+                          Foreground="{StaticResource TextBrush}"
+                          FontSize="11"
+                          Margin="0,4,0,0"/>
             </StackPanel>
 
             <!-- 탭: Filters / Results -->

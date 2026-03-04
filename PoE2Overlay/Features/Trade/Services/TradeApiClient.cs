@@ -42,7 +42,8 @@ namespace PoE2Overlay.Features.Trade.Services
             HttpResponseMessage searchResponse;
             try
             {
-                searchResponse = await _client.PostAsync(searchUrl, content);
+                searchResponse = await SendWithRetryAsync(
+                    () => _client.PostAsync(searchUrl, new StringContent(json, Encoding.UTF8, "application/json")));
             }
             catch (HttpRequestException ex)
             {
@@ -85,7 +86,7 @@ namespace PoE2Overlay.Features.Trade.Services
             HttpResponseMessage fetchResponse;
             try
             {
-                fetchResponse = await _client.GetAsync(fetchUrl);
+                fetchResponse = await SendWithRetryAsync(() => _client.GetAsync(fetchUrl));
             }
             catch (HttpRequestException ex)
             {
@@ -116,6 +117,27 @@ namespace PoE2Overlay.Features.Trade.Services
                 Items = fetchResult?.Result ?? new List<FetchedItem>(),
                 QueryId = searchResult.Id
             };
+        }
+
+        private static readonly int[] RetryableStatusCodes = { 500, 502, 503, 504 };
+
+        private static async Task<HttpResponseMessage> SendWithRetryAsync(
+            Func<Task<HttpResponseMessage>> requestFunc, int maxRetries = 2)
+        {
+            int delayMs = 1000;
+            for (int attempt = 0; ; attempt++)
+            {
+                var response = await requestFunc();
+                if (response.IsSuccessStatusCode || attempt >= maxRetries)
+                    return response;
+
+                var status = (int)response.StatusCode;
+                if (!RetryableStatusCodes.Contains(status))
+                    return response;
+
+                await Task.Delay(delayMs);
+                delayMs = Math.Min(delayMs * 2, 8000);
+            }
         }
 
         private void ParseRateLimitHeaders(HttpResponseMessage response)

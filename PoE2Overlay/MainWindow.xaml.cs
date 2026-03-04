@@ -99,6 +99,7 @@ namespace PoE2Overlay
 
                 if (!string.IsNullOrEmpty(text) &&
                     text.Contains("Item Class:") &&
+                    text.Contains("Rarity:") &&
                     text.Contains("--------"))
                 {
                     EnsureTradeOverlay();
