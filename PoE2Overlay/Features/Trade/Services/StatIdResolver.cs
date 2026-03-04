@@ -18,7 +18,6 @@ namespace PoE2Overlay.Features.Trade.Services
         private readonly Dictionary<string, string> _implicitMap = new();
         private readonly SemaphoreSlim _loadLock = new(1, 1);
         private bool _isLoaded;
-        private bool _loadFailed;
 
         public bool IsLoaded => _isLoaded;
 
@@ -37,17 +36,13 @@ namespace PoE2Overlay.Features.Trade.Services
             {
                 if (_isLoaded) return;
 
-                _loadFailed = false;
                 var json = await _client.GetStringAsync(
                     "https://www.pathofexile.com/api/trade2/data/stats");
                 var data = JObject.Parse(json);
                 var result = data["result"] as JArray;
 
                 if (result == null)
-                {
-                    _loadFailed = true;
                     return;
-                }
 
                 foreach (var category in result)
                 {
@@ -73,7 +68,6 @@ namespace PoE2Overlay.Features.Trade.Services
             }
             catch (Exception ex)
             {
-                _loadFailed = true;
                 Debug.WriteLine($"[StatIdResolver] Failed to load stats: {ex.Message}");
             }
             finally
