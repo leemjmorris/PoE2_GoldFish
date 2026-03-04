@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Serilog;
 
 namespace PoE2Overlay.Features.Screenshot
 {
@@ -17,6 +18,8 @@ namespace PoE2Overlay.Features.Screenshot
 
     public class ScreenshotService : IDisposable
     {
+        private const int MaxThumbnails = 100;
+
         private FileSystemWatcher _watcher;
         private readonly Dispatcher _dispatcher;
 
@@ -57,7 +60,7 @@ namespace PoE2Overlay.Features.Screenshot
                 .SelectMany(ext => Directory.GetFiles(directory, ext))
                 .OrderByDescending(f => File.GetCreationTime(f));
 
-            foreach (var file in files)
+            foreach (var file in files.Take(MaxThumbnails))
                 AddScreenshot(file);
         }
 
@@ -94,10 +97,14 @@ namespace PoE2Overlay.Features.Screenshot
                     Thumbnail = thumbnail,
                     CreatedAt = File.GetCreationTime(filePath)
                 });
+
+                // 최대 개수 초과 시 가장 오래된 항목 제거
+                while (Screenshots.Count > MaxThumbnails)
+                    Screenshots.RemoveAt(Screenshots.Count - 1);
             }
-            catch
+            catch (Exception ex)
             {
-                // 이미지 로딩 실패 (파일 쓰기 중 등) - 무시
+                Log.Debug(ex, "Thumbnail load failed for {FilePath}", filePath);
             }
         }
 
@@ -114,8 +121,13 @@ namespace PoE2Overlay.Features.Screenshot
 
         public void StopWatching()
         {
-            _watcher?.Dispose();
-            _watcher = null;
+            if (_watcher != null)
+            {
+                _watcher.Created -= OnFileCreated;
+                _watcher.Deleted -= OnFileDeleted;
+                _watcher.Dispose();
+                _watcher = null;
+            }
         }
 
         public void Dispose()

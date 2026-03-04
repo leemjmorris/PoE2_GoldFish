@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Serilog;
 
 namespace PoE2Overlay.Features.Memo
 {
@@ -17,7 +18,7 @@ namespace PoE2Overlay.Features.Memo
                 if (File.Exists(MemoPath))
                     return File.ReadAllText(MemoPath);
             }
-            catch { }
+            catch (Exception ex) { Log.Warning(ex, "Memo load failed"); }
             return string.Empty;
         }
 
@@ -29,8 +30,9 @@ namespace PoE2Overlay.Features.Memo
                 File.WriteAllText(MemoPath, content);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warning(ex, "Memo save failed");
                 return false;
             }
         }

@@ -12,7 +12,6 @@
                 <ContextMenu>
                     <MenuItem Header="Memo (F2)" Click="OnMemoClick"/>
                     <MenuItem Header="Screenshot (F3)" Click="OnScreenshotClick"/>
-                    <MenuItem Header="Trade (Ctrl+D)" Click="OnTradeClick"/>
                     <MenuItem Header="Settings" Click="OnSettingsClick"/>
                     <Separator/>
                     <MenuItem Header="Exit" Click="OnExitClick"/>

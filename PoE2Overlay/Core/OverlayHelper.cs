@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using Serilog;
 
 namespace PoE2Overlay.Core
 {
@@ -31,7 +32,7 @@ namespace PoE2Overlay.Core
                     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
             }
-            catch { }
+            catch (Exception ex) { Log.Debug(ex, "SetWindowPos failed"); }
         }
     }
 }

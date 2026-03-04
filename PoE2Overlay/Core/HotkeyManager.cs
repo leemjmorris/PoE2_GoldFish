@@ -58,6 +58,8 @@ namespace PoE2Overlay.Core
             using var process = Process.GetCurrentProcess();
             using var module = process.MainModule;
             _hookId = SetWindowsHookEx(WH_KEYBOARD_LL, _proc, GetModuleHandle(module.ModuleName), 0);
+            if (_hookId == IntPtr.Zero)
+                Serilog.Log.Warning("Failed to set global keyboard hook (error: {Error})", Marshal.GetLastWin32Error());
         }
 
         public void Register(uint modifiers, uint vkCode, Action callback, bool suppress = false)
@@ -103,7 +105,7 @@ namespace PoE2Overlay.Core
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[HotkeyManager] Callback error: {ex.Message}");
+                    Serilog.Log.Warning(ex, "Hotkey callback error");
                 }
             }
 

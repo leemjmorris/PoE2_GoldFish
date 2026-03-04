@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace PoE2Overlay.Core
 {
@@ -24,16 +25,12 @@ namespace PoE2Overlay.Core
         public double ScreenshotWindowWidth { get; set; } = 400;
         public double ScreenshotWindowHeight { get; set; } = 500;
 
-        // Trade
-        public double TradeWindowLeft { get; set; } = 300;
-        public double TradeWindowTop { get; set; } = 100;
-        public double TradeWindowWidth { get; set; } = 420;
-        public double TradeWindowHeight { get; set; } = 600;
-        public string TradeLeague { get; set; } = "Standard";
+        // General
+        public string GameLanguage { get; set; } = "en";
 
-        private static AppSettings _instance;
+        private static readonly Lazy<AppSettings> _lazy = new(Load);
 
-        public static AppSettings Instance => _instance ??= Load();
+        public static AppSettings Instance => _lazy.Value;
 
         private static AppSettings Load()
         {
@@ -45,19 +42,24 @@ namespace PoE2Overlay.Core
                     return JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
                 }
             }
-            catch { }
+            catch (Exception ex) { Log.Warning(ex, "Settings load failed"); }
             return new AppSettings();
         }
 
+        private static readonly object _saveLock = new();
+
         public void Save()
         {
-            try
+            lock (_saveLock)
             {
-                Directory.CreateDirectory(SettingsDir);
-                string json = JsonConvert.SerializeObject(this, Formatting.Indented);
-                File.WriteAllText(SettingsPath, json);
+                try
+                {
+                    Directory.CreateDirectory(SettingsDir);
+                    string json = JsonConvert.SerializeObject(this, Formatting.Indented);
+                    File.WriteAllText(SettingsPath, json);
+                }
+                catch (Exception ex) { Log.Warning(ex, "Settings save failed"); }
             }
-            catch { }
         }
     }
 }
