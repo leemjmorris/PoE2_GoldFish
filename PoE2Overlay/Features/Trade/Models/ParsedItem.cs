@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace PoE2Overlay.Features.Trade.Models
 {
@@ -11,6 +11,10 @@ namespace PoE2Overlay.Features.Trade.Models
         Currency,
         Gem,
         DivinationCard,
+        Flask,
+        Rune,
+        Waystone,
+        Tablet,
         Unknown
     }
 

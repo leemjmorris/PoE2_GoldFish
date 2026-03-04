@@ -28,7 +28,11 @@ namespace PoE2Overlay.Features.Trade.Services
             ParseHeader(sections[0], item);
 
             if (item.Rarity == ItemRarity.Unknown)
-                return null;
+            {
+                ClassifyByItemClass(item);
+                if (item.Rarity == ItemRarity.Unknown)
+                    return null;
+            }
 
             // 모드 파싱용 - 아이템 레벨 이후의 섹션들이 모드 영역
             bool passedItemLevel = false;
@@ -100,6 +104,10 @@ namespace PoE2Overlay.Features.Trade.Services
                         "Currency" => ItemRarity.Currency,
                         "Gem" => ItemRarity.Gem,
                         "Divination Card" => ItemRarity.DivinationCard,
+                        "Flask" => ItemRarity.Flask,
+                        "Rune" => ItemRarity.Rune,
+                        "Waystone" => ItemRarity.Waystone,
+                        "Tablet" => ItemRarity.Tablet,
                         _ => ItemRarity.Unknown
                     };
                 }
@@ -254,6 +262,18 @@ namespace PoE2Overlay.Features.Trade.Services
                     }
                 }
             }
+        }
+
+        private static void ClassifyByItemClass(ParsedItem item)
+        {
+            if (string.IsNullOrEmpty(item.ItemClass)) return;
+            var cls = item.ItemClass.ToLowerInvariant();
+
+            if (cls.Contains("flask"))          item.Rarity = ItemRarity.Flask;
+            else if (cls.Contains("rune"))      item.Rarity = ItemRarity.Rune;
+            else if (cls.Contains("waystone"))  item.Rarity = ItemRarity.Waystone;
+            else if (cls.Contains("tablet"))    item.Rarity = ItemRarity.Tablet;
+            else if (cls.Contains("currency"))  item.Rarity = ItemRarity.Currency;
         }
 
         /// <summary>

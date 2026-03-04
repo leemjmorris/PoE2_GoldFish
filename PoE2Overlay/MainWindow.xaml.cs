@@ -6,6 +6,7 @@ using PoE2Overlay.Core;
 using PoE2Overlay.Features.Memo;
 using PoE2Overlay.Features.Screenshot;
 using PoE2Overlay.Features.Trade;
+using PoE2Overlay.Features.Trade.Services;
 
 namespace PoE2Overlay
 {
@@ -42,13 +43,19 @@ namespace PoE2Overlay
         private const ushort VK_CONTROL = 0x11;
         private const ushort VK_C = 0x43;
 
-        private HotkeyManager _hotkeyManager;
+        private readonly HotkeyManager _hotkeyManager;
+        private readonly StatIdResolver _statResolver;
+        private readonly TradeApiClient _tradeClient;
+
         private MemoOverlay _memoOverlay;
         private ScreenshotOverlay _screenshotOverlay;
         private TradeOverlay _tradeOverlay;
 
-        public MainWindow()
+        public MainWindow(StatIdResolver statResolver, TradeApiClient tradeClient)
         {
+            _statResolver = statResolver;
+            _tradeClient = tradeClient;
+
             InitializeComponent();
 
             _hotkeyManager = new HotkeyManager();
@@ -58,13 +65,22 @@ namespace PoE2Overlay
         }
 
         /// <summary>
-        /// Ctrl+D → D를 게임에 전달 차단 → Ctrl+C 시뮬레이션 → 클립보드 읽기 → 시세 조회
-        /// Sidekick 방식과 동일.
+        /// Ctrl+D → D를 게임에 전달 차단 → 원본 클립보드 저장 → Ctrl+C 시뮬레이션
+        ///         → 클립보드 읽기 → 시세 조회 → 원본 클립보드 복원
         /// </summary>
         private void OnPriceCheck()
         {
             _ = Dispatcher.InvokeAsync(async () =>
             {
+                // 원본 클립보드 저장
+                string originalClipboard = null;
+                try
+                {
+                    if (Clipboard.ContainsText())
+                        originalClipboard = Clipboard.GetText();
+                }
+                catch { }
+
                 // Ctrl+C 시뮬레이션 (SendInput API 사용)
                 var inputs = new INPUT[]
                 {
@@ -85,12 +101,25 @@ namespace PoE2Overlay
                     text.Contains("Item Class:") &&
                     text.Contains("--------"))
                 {
-                    if (_tradeOverlay == null)
-                        _tradeOverlay = new TradeOverlay();
-
+                    EnsureTradeOverlay();
                     _tradeOverlay.ProcessClipboardText(text);
                 }
+
+                // 원본 클립보드 복원
+                await Task.Delay(200);
+                try
+                {
+                    if (originalClipboard != null)
+                        Clipboard.SetText(originalClipboard);
+                }
+                catch { }
             });
+        }
+
+        private void EnsureTradeOverlay()
+        {
+            if (_tradeOverlay == null)
+                _tradeOverlay = new TradeOverlay(_tradeClient, _statResolver);
         }
 
         private void ToggleMemo()
@@ -131,9 +160,7 @@ namespace PoE2Overlay
 
         private void OnTradeClick(object sender, RoutedEventArgs e)
         {
-            if (_tradeOverlay == null)
-                _tradeOverlay = new TradeOverlay();
-
+            EnsureTradeOverlay();
             _tradeOverlay.Toggle();
         }
 

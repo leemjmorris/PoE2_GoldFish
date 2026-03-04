@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls.Primitives;
@@ -131,6 +131,12 @@ namespace PoE2Overlay.Features.Memo
                 Show();
                 // Activate() 제거 — PoE2가 포커스 유지, 클릭 시에만 포커스 전환
             }
+        }
+
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            PoE2Overlay.Core.OverlayHelper.AssertTopmost(this);
         }
     }
 }

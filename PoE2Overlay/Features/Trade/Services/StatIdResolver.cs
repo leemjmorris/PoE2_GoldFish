@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -96,7 +97,40 @@ namespace PoE2Overlay.Features.Trade.Services
                 _ => _explicitMap
             };
 
-            return map.TryGetValue(normalized, out var id) ? id : null;
+            // 1. 정확한 매칭
+            if (map.TryGetValue(normalized, out var id)) return id;
+
+            // 2. 퍼지 매칭 fallback (Jaccard 유사도, 임계값 0.6)
+            return FuzzyResolve(normalized, map);
+        }
+
+        private static string FuzzyResolve(string normalized, Dictionary<string, string> map)
+        {
+            var queryTokens = new HashSet<string>(
+                normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+            if (queryTokens.Count == 0) return null;
+
+            string bestId = null;
+            double bestScore = 0.6; // 최소 임계값
+
+            foreach (var (key, id) in map)
+            {
+                var keyTokens = new HashSet<string>(
+                    key.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+                double intersection = queryTokens.Intersect(keyTokens).Count();
+                double union = queryTokens.Union(keyTokens).Count();
+                double score = union > 0 ? intersection / union : 0;
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestId = id;
+                }
+            }
+
+            return bestId;
         }
 
         private static string NormalizeModText(string text)

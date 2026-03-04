@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
@@ -162,6 +162,12 @@ namespace PoE2Overlay.Features.Screenshot
         private void UpdateStatus()
         {
             StatusText.Text = $"{_service.Screenshots.Count} images";
+        }
+
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            PoE2Overlay.Core.OverlayHelper.AssertTopmost(this);
         }
     }
 }

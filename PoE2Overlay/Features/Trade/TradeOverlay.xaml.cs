@@ -15,13 +15,16 @@ namespace PoE2Overlay.Features.Trade
 {
     public partial class TradeOverlay : Window
     {
-        private readonly TradeApiClient _apiClient = new();
-        private readonly StatIdResolver _statResolver = new();
+        private readonly TradeApiClient _apiClient;
+        private readonly StatIdResolver _statResolver;
         private ParsedItem _currentItem;
         private readonly List<ModFilterControl> _modFilterControls = new();
 
-        public TradeOverlay()
+        public TradeOverlay(TradeApiClient apiClient, StatIdResolver statResolver)
         {
+            _apiClient = apiClient;
+            _statResolver = statResolver;
+
             InitializeComponent();
             LoadState();
             LeagueInput.Text = AppSettings.Instance.TradeLeague;
@@ -379,6 +382,12 @@ namespace PoE2Overlay.Features.Trade
             double newH = Height + e.VerticalChange;
             if (newW >= MinWidth) Width = newW;
             if (newH >= MinHeight) Height = newH;
+        }
+
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            PoE2Overlay.Core.OverlayHelper.AssertTopmost(this);
         }
 
     }
