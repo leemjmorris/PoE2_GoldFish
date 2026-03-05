@@ -1,6 +1,7 @@
-<Window x:Class="PoE2Overlay.Features.Screenshot.ScreenshotOverlay"
+<core:OverlayBase x:Class="PoE2Overlay.Features.Screenshot.ScreenshotOverlay"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="clr-namespace:PoE2Overlay.Core"
         Style="{StaticResource OverlayWindowStyle}"
         ShowActivated="False"
         Width="400" Height="500"
@@ -101,4 +102,4 @@
                    DragDelta="OnResizeDrag" Cursor="SizeNWSE"/>
         </Grid>
     </Border>
-</Window>
+</core:OverlayBase>

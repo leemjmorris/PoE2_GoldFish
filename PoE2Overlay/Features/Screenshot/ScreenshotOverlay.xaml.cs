@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using PoE2Overlay.Core;
+using Serilog;
 
 namespace PoE2Overlay.Features.Screenshot
 {
-    public partial class ScreenshotOverlay : Window
+    public partial class ScreenshotOverlay : OverlayBase
     {
         private readonly ScreenshotService _service;
         private ImagePreviewWindow _previewWindow;
@@ -30,30 +30,7 @@ namespace PoE2Overlay.Features.Screenshot
             }
         }
 
-        private void LoadState()
-        {
-            var s = AppSettings.Instance;
-            Left = s.ScreenshotWindowLeft;
-            Top = s.ScreenshotWindowTop;
-            Width = s.ScreenshotWindowWidth;
-            Height = s.ScreenshotWindowHeight;
-            ClampToScreen();
-        }
-
-        private void ClampToScreen()
-        {
-            var screenW = SystemParameters.VirtualScreenWidth;
-            var screenH = SystemParameters.VirtualScreenHeight;
-            var screenL = SystemParameters.VirtualScreenLeft;
-            var screenT = SystemParameters.VirtualScreenTop;
-
-            if (Left < screenL) Left = screenL;
-            if (Top < screenT) Top = screenT;
-            if (Left + Width > screenL + screenW) Left = screenL + screenW - Width;
-            if (Top + Height > screenT + screenH) Top = screenT + screenH - Height;
-        }
-
-        private void SaveState()
+        protected override void SaveWindowState()
         {
             var s = AppSettings.Instance;
             s.ScreenshotWindowLeft = Left;
@@ -63,36 +40,21 @@ namespace PoE2Overlay.Features.Screenshot
             s.Save();
         }
 
-        public void Toggle()
+        protected override void LoadWindowState()
         {
-            if (IsVisible)
-            {
-                SaveState();
-                Hide();
-            }
-            else
-            {
-                Show();
-            }
-        }
-
-        private void OnTitleBarDrag(object sender, MouseButtonEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-                DragMove();
-        }
-
-        private void OnCloseClick(object sender, RoutedEventArgs e)
-        {
-            SaveState();
-            Hide();
+            var s = AppSettings.Instance;
+            Left = s.ScreenshotWindowLeft;
+            Top = s.ScreenshotWindowTop;
+            Width = s.ScreenshotWindowWidth;
+            Height = s.ScreenshotWindowHeight;
         }
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            e.Cancel = true;
-            SaveState();
-            Hide();
+            _service.Screenshots.CollectionChanged -= OnScreenshotsChanged;
+            _previewWindow?.Close();
+            _previewWindow = null;
+            base.OnClosing(e);
         }
 
         private void OnBrowseClick(object sender, RoutedEventArgs e)
@@ -134,24 +96,15 @@ namespace PoE2Overlay.Features.Screenshot
                     _previewWindow = new ImagePreviewWindow();
 
                 var image = _service.LoadFullImage(filePath);
-                // 이 오버레이의 화면 좌표를 앵커로 전달
                 var anchorRect = new Rect(Left, Top, Width, Height);
                 _previewWindow.ShowImage(image, anchorRect);
             }
-            catch { }
+            catch (Exception ex) { Log.Debug(ex, "Preview failed"); }
         }
 
         private void HidePreview()
         {
             _previewWindow?.HidePreview();
-        }
-
-        private void OnResizeDrag(object sender, DragDeltaEventArgs e)
-        {
-            double newWidth = Width + e.HorizontalChange;
-            double newHeight = Height + e.VerticalChange;
-            if (newWidth >= MinWidth) Width = newWidth;
-            if (newHeight >= MinHeight) Height = newHeight;
         }
 
         private void OnScreenshotsChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -162,12 +115,6 @@ namespace PoE2Overlay.Features.Screenshot
         private void UpdateStatus()
         {
             StatusText.Text = $"{_service.Screenshots.Count} images";
-        }
-
-        protected override void OnDeactivated(EventArgs e)
-        {
-            base.OnDeactivated(e);
-            PoE2Overlay.Core.OverlayHelper.AssertTopmost(this);
         }
     }
 }
