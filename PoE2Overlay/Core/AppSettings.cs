@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Serilog;
 
 namespace PoE2Overlay.Core
@@ -25,8 +25,11 @@ namespace PoE2Overlay.Core
         public double ScreenshotWindowWidth { get; set; } = 400;
         public double ScreenshotWindowHeight { get; set; } = 500;
 
-        // General
-        public string GameLanguage { get; set; } = "en";
+        // PassiveTree
+        public double PassiveTreeWindowLeft { get; set; } = 150;
+        public double PassiveTreeWindowTop { get; set; } = 80;
+        public double PassiveTreeWindowWidth { get; set; } = 900;
+        public double PassiveTreeWindowHeight { get; set; } = 700;
 
         private static readonly Lazy<AppSettings> _lazy = new(Load);
 
@@ -39,7 +42,7 @@ namespace PoE2Overlay.Core
                 if (File.Exists(SettingsPath))
                 {
                     string json = File.ReadAllText(SettingsPath);
-                    return JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
+                    return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                 }
             }
             catch (Exception ex) { Log.Warning(ex, "Settings load failed"); }
@@ -55,7 +58,7 @@ namespace PoE2Overlay.Core
                 try
                 {
                     Directory.CreateDirectory(SettingsDir);
-                    string json = JsonConvert.SerializeObject(this, Formatting.Indented);
+                    string json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
                     File.WriteAllText(SettingsPath, json);
                 }
                 catch (Exception ex) { Log.Warning(ex, "Settings save failed"); }

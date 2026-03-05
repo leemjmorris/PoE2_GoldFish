@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using PoE2Overlay.Core;
 using PoE2Overlay.Features.Memo;
+using PoE2Overlay.Features.PassiveTree;
 using PoE2Overlay.Features.Screenshot;
 
 namespace PoE2Overlay
@@ -12,6 +13,7 @@ namespace PoE2Overlay
 
         private MemoOverlay _memoOverlay;
         private ScreenshotOverlay _screenshotOverlay;
+        private PassiveTreeOverlay _passiveTreeOverlay;
 
         public MainWindow()
         {
@@ -20,6 +22,7 @@ namespace PoE2Overlay
             _hotkeyManager = new HotkeyManager();
             _hotkeyManager.Register(ModKeys.None, VKeys.F2, ToggleMemo);
             _hotkeyManager.Register(ModKeys.None, VKeys.F3, ToggleScreenshot);
+            _hotkeyManager.Register(ModKeys.None, VKeys.F4, TogglePassiveTree);
         }
 
         private void ToggleMemo()
@@ -38,9 +41,19 @@ namespace PoE2Overlay
             _screenshotOverlay.Toggle();
         }
 
+        private void TogglePassiveTree()
+        {
+            if (_passiveTreeOverlay == null)
+                _passiveTreeOverlay = new PassiveTreeOverlay();
+
+            _passiveTreeOverlay.Toggle();
+        }
+
         private void OnMemoClick(object sender, RoutedEventArgs e) => ToggleMemo();
 
         private void OnScreenshotClick(object sender, RoutedEventArgs e) => ToggleScreenshot();
+
+        private void OnPassiveTreeClick(object sender, RoutedEventArgs e) => TogglePassiveTree();
 
         private void OnSettingsClick(object sender, RoutedEventArgs e)
         {
@@ -49,9 +62,6 @@ namespace PoE2Overlay
 
         private void OnExitClick(object sender, RoutedEventArgs e)
         {
-            CleanupOverlays();
-            _hotkeyManager?.Dispose();
-            TrayIcon?.Dispose();
             Application.Current.Shutdown();
         }
 
@@ -67,6 +77,7 @@ namespace PoE2Overlay
         {
             _memoOverlay?.Close();
             _screenshotOverlay?.Close();
+            _passiveTreeOverlay?.Close();
         }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Serilog;
@@ -64,9 +65,11 @@ namespace PoE2Overlay.Features.Screenshot
                 AddScreenshot(file);
         }
 
-        private void OnFileCreated(object sender, FileSystemEventArgs e)
+        private async void OnFileCreated(object sender, FileSystemEventArgs e)
         {
-            _dispatcher.BeginInvoke(() => AddScreenshot(e.FullPath));
+            // PoE2가 파일 쓰기를 완료하기 전에 이벤트가 발생할 수 있으므로 대기
+            await Task.Delay(500);
+            await _dispatcher.InvokeAsync(() => AddScreenshot(e.FullPath));
         }
 
         private void OnFileDeleted(object sender, FileSystemEventArgs e)

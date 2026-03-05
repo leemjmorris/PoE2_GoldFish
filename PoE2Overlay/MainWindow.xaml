@@ -12,6 +12,7 @@
                 <ContextMenu>
                     <MenuItem Header="Memo (F2)" Click="OnMemoClick"/>
                     <MenuItem Header="Screenshot (F3)" Click="OnScreenshotClick"/>
+                    <MenuItem Header="Passive Tree (F4)" Click="OnPassiveTreeClick"/>
                     <MenuItem Header="Settings" Click="OnSettingsClick"/>
                     <Separator/>
                     <MenuItem Header="Exit" Click="OnExitClick"/>

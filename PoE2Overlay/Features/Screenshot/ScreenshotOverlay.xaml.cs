@@ -49,6 +49,12 @@ namespace PoE2Overlay.Features.Screenshot
             Height = s.ScreenshotWindowHeight;
         }
 
+        public override void Toggle()
+        {
+            if (IsVisible) _previewWindow?.HidePreview();
+            base.Toggle();
+        }
+
         protected override void OnClosing(CancelEventArgs e)
         {
             _service.Screenshots.CollectionChanged -= OnScreenshotsChanged;

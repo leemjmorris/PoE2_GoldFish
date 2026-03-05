@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
+using PoE2Overlay.Core;
 
 namespace PoE2Overlay.Features.Screenshot
 {
@@ -93,6 +94,12 @@ namespace PoE2Overlay.Features.Screenshot
         {
             if (IsVisible)
                 Hide();
+        }
+
+        protected override void OnDeactivated(EventArgs e)
+        {
+            base.OnDeactivated(e);
+            OverlayHelper.AssertTopmost(this);
         }
 
         protected override void OnClosing(CancelEventArgs e)
